@@ -89,7 +89,7 @@ if __name__ == '__main__':
         plot_loss += real_loss
 
         if s % print_every == 0:
-            torch.save(encoder, 'encoder.pkl')
-            torch.save(decoder, 'decoder.pkl')
+            torch.save(encoder, 'encoder.pt')
+            torch.save(decoder, 'decoder.pt')
             show_loss(s, print_loss/print_every)
             print_loss = 0
