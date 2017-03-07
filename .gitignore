@@ -1,0 +1,4 @@
+*.pkl
+*.pt
+data/
+*.pyc
