@@ -1,4 +1,5 @@
 .ipynb_checkpoints/
 models
+raw
 video
 *.npy
