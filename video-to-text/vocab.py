@@ -8,8 +8,6 @@ from __future__ import print_function
 import pickle
 import json
 from collections import Counter
-import nltk
-
 
 class Vocabulary(object):
 
@@ -57,7 +55,8 @@ def build_vocab(rawdata, threshold):
     ncaptions = len(sentences)
     for i, row in enumerate(sentences):
         caption = row['caption']
-        tokens = nltk.tokenize.word_tokenize(caption.lower())
+        # 直接按照空格进行单词的切分
+        tokens = caption.lower().split(' ')
         counter.update(tokens)
         if i % 1000 == 0:
             print('[{}/{}] tokenized the captions.'.format(i, ncaptions))

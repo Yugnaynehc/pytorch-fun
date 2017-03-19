@@ -2,6 +2,7 @@ import random
 import torch
 from torch.autograd import Variable
 
+
 class DynamicNet(torch.nn.Module):
 
     def __init__(self, D_in, H, D_out):
@@ -27,7 +28,7 @@ y = Variable(torch.randn(N, D_out), requires_grad=False)
 net = DynamicNet(D_in, H, D_out)
 
 lr = 1e-4
-#optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+# optimizer = torch.optim.Adam(net.parameters(), lr=lr)
 optimizer = torch.optim.SGD(net.parameters(), lr=1e-4, momentum=0.9)
 
 loss_fn = torch.nn.MSELoss(size_average=False)
