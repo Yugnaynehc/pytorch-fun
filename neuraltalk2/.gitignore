@@ -1,0 +1,5 @@
+checkpoints/
+checkpoints_bak/
+coco/
+.ipynb_checkpoints/
+__pycache__

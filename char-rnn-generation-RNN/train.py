@@ -42,6 +42,5 @@ for s in range(1, steps+1):
                                                loss.data[0]/l)
         print(info)
 
-
     if s % save_every == 0:
         torch.save(net, 'generator.pt')
