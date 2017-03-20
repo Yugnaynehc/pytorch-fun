@@ -49,10 +49,10 @@ for epoch in range(num_epochs):
 
         optimizer.zero_grad()
         outputs = decoder(videos, targets)
-        # 把output拉直
+        # 把output压缩（剔除pad的部分）之后拉直
         outputs = torch.cat([outputs[j][:lengths[j]] for j in range(batch_size)], 0)
         outputs = outputs.view(-1, vocab_size)
-        # 把target拉直
+        # 把target压缩（剔除pad的部分）之后拉直
         targets = torch.cat([targets[j][:lengths[j]] for j in range(batch_size)], 0)
         targets = targets.view(-1)
         loss = criterion(outputs, targets)

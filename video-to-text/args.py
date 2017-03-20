@@ -7,15 +7,15 @@ import os
 
 # 训练相关的超参数
 num_epochs = 1
-batch_size = 32
-learning_rate = 1e-2
+batch_size = 64
+learning_rate = 1e-3
 use_cuda = True
 
 # 模型相关的超参数
-img_embed_size = 500
+img_embed_size = 1000
 word_embed_size = 500
-hidden1_size = 512  # 第一个LSTM层的隐层单元数目
-hidden2_size = 512  # 第二个KSTM层的隐层单元数目
+hidden1_size = 1024  # 第一个LSTM层的隐层单元数目
+hidden2_size = 1024  # 第二个KSTM层的隐层单元数目
 
 # frame_shape = (512, 7, 7)  # 视屏帧特征的形状
 frame_size = 4096  # 视频特征的维度

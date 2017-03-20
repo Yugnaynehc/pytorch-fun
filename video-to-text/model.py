@@ -45,6 +45,7 @@ class DecoderRNN(nn.Module):
         '''
         super(DecoderRNN, self).__init__()
 
+        self.frame_size = frame_size
         self.img_embed_size = img_embed_size
         self.hidden1_size = hidden1_size
         self.word_embed_size = word_embed_size
@@ -90,10 +91,11 @@ class DecoderRNN(nn.Module):
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
         而是用上一步的生成结果作为下一步的输入
+        UPDATED: 最后还是采用了teacher forcing，不然很难收敛
         '''
         batch_size = len(captions)
 
-        v = video_feats.view(-1, self.visual_size)
+        v = video_feats.view(-1, self.frame_size)
         v = self.linear1(v)
         v = v.view(batch_size, self.num_frames, self.img_embed_size)
 
@@ -133,7 +135,10 @@ class DecoderRNN(nn.Module):
             cat = torch.cat((word, hidden1[0]), 1)
             hidden2 = self.lstm2_cell(cat, hidden2)
             word_logits = self.log_softmax(self.linear2(hidden2[0]))
-            word_id = word_logits.max(1)[1]
+            # 非 teacher forcing模式
+            # word_id = word_logits.max(1)[1]
+            # teacher forcing模式
+            word_id = captions[:, i]
             word = self.embed(word_id).squeeze(1)
             outputs.append(word_logits)
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
