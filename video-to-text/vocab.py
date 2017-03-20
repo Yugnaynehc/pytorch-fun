@@ -9,6 +9,8 @@ import os
 import pickle
 import json
 from collections import Counter
+from args import anno_json_path, feat_save_path, vocab_pkl_path
+
 
 class Vocabulary(object):
 
@@ -16,10 +18,10 @@ class Vocabulary(object):
         self.word2idx = {}
         self.idx2word = []
         self.nwords = 0
+        self.add_word('<pad>')
         self.add_word('<start>')
         self.add_word('<end>')
         self.add_word('<unk>')
-        self.add_word('<pad>')
 
     def add_word(self, w):
         '''
@@ -72,14 +74,12 @@ def build_vocab(rawdata, threshold):
 
 
 def main():
-    vocab = build_vocab(rawdata='./raw/train_val_videodatainfo.json', threshold=5)
-    feat_save_path = './feats'
+    vocab = build_vocab(rawdata=anno_json_path, threshold=5)
     if not os.path.exists(feat_save_path):
         os.mkdir(feat_save_path)
-    save_file_name = os.path.join(feat_save_path, 'vocab.pkl')
-    with open(save_file_name, 'wb') as f:
+    with open(vocab_pkl_path, 'wb') as f:
         pickle.dump(vocab, f)
-    print('Save vocabulary to %s.' % save_file_name)
+    print('Save vocabulary to %s.' % vocab_pkl_path)
 
 
 if __name__ == '__main__':

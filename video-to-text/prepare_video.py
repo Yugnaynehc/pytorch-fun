@@ -5,70 +5,25 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
-import glob
 import cv2
 import numpy as np
-import skimage
+from utils import preprocess_frame
+from model import EncoderCNN
 import torch
-import torch.nn as nn
-import torchvision.models as models
 from torch.autograd import Variable
 import h5py
-import numpy as np
-
-
-def preprocess_frame(image, target_height=224, target_width=224):
-    if len(image.shape) == 2:
-        # 把单通道的灰度图复制三遍变成三通道的图片
-        image = np.tile(image[:, :, None], 3)
-    elif len(image.shape) == 4:
-        image = image[:, :, :, 0]
-
-    image = skimage.img_as_float(image).astype(np.float32)
-    height, width, channels = image.shape
-    if height == width:
-        resized_image = cv2.resize(image, (target_height, target_width))
-    elif height < width:
-        resized_image = cv2.resize(image, (int(width * target_height / height),
-                                           target_width))
-        cropping_length = int((resized_image.shape[1] - target_height) / 2)
-        resized_image = resized_image[:, cropping_length:resized_image.shape[1] - cropping_length]
-    else:
-        resized_image = cv2.resize(image, (target_height,
-                                           int(height * target_width / width)))
-        cropping_length = int((resized_image.shape[0] - target_width) / 2)
-        resized_image = resized_image[cropping_length:resized_image.shape[0] - cropping_length]
-    return cv2.resize(resized_image, (target_height, target_width))
-
-
-def cut_vgg(net):
-    '''
-    用一种笨方法把VGG的最后一个fc层（及其之前的ReLU层）剔除掉
-    '''
-    net.classifier = nn.Sequential(
-        net.classifier[0],
-        net.classifier[1],
-        net.classifier[2],
-        net.classifier[3],
-        net.classifier[4],
-    )
-    return net
+from args import video_root, feat_save_path, video_h5_path, video_h5_dataset
+from args import frame_size
 
 
 def main():
-    # 加载一下VGG16模型
-    vgg = models.vgg16()
-    vgg.load_state_dict(torch.load('./models/vgg16-00b39a1b.pth'))
-    # 把最后一个fc层剔除掉，之后在训练的时候会引入一个新fc层，用来做图像的embedding
-    vgg = cut_vgg(vgg)
-    vgg.eval()
-    vgg.cuda()
+    encoder = EncoderCNN()
+    encoder.eval()
+    encoder.cuda()
 
     # 从视频中等间隔抽取60帧
     num_frames = 60
     # 设置一下数据读取和保存的目录
-    video_root = './raw/TrainValVideo/'
-    feat_save_path = './feats'
     if not os.path.exists(feat_save_path):
         os.mkdir(feat_save_path)
 
@@ -77,15 +32,16 @@ def main():
     nvideos = len(videos)
 
     # 创建保存视频特征的hdf5文件
-    saved_path = os.path.join(feat_save_path, 'videos.h5')
-    if os.path.exists(saved_path):
+    if os.path.exists(video_h5_path):
         # 如果hdf5文件已经存在，说明之前处理过，或许是没有完全处理完
         # 使用r+ (read and write)模式读取，以免覆盖掉之前保存好的数据
-        h5 = h5py.File(saved_path, 'r+')
-        dataset_feats = h5['feats']
+        h5 = h5py.File(video_h5_path, 'r+')
+        dataset_feats = h5[video_h5_dataset]
     else:
-        h5 = h5py.File(saved_path, 'w')
-        dataset_feats = h5.create_dataset('feats', (nvideos, num_frames, 512, 7, 7), dtype='float32')
+        h5 = h5py.File(video_h5_path, 'w')
+        dataset_feats = h5.create_dataset(video_h5_dataset,
+                                          (nvideos, num_frames, frame_size),
+                                          dtype='float32')
 
     for i, video in enumerate(videos):
         print(video)
@@ -121,8 +77,8 @@ def main():
 
         # 视频特征的shape是num_frames x 512 x 7 x 7
         # 如果帧的数量小于num_frames，则剩余的部分用0补足
-        feats = np.zeros((num_frames, 512, 7, 7), dtype='float32')
-        feats[:frame_count, :] = vgg.features(cropped_frame_list).data.cpu().numpy()
+        feats = np.zeros((num_frames, frame_size), dtype='float32')
+        feats[:frame_count, :] = encoder(cropped_frame_list).data.cpu().numpy()
         dataset_feats[i] = feats
 
 
