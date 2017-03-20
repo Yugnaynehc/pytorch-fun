@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+import os
 import pickle
 import json
 from collections import Counter
@@ -34,7 +35,7 @@ class Vocabulary(object):
         返回单词对应的id
         '''
         if w not in self.word2idx:
-            return self.word2idx
+            return self.word2idx['<unk>']
         return self.word2idx[w]
 
     def __len__(self):
@@ -72,10 +73,13 @@ def build_vocab(rawdata, threshold):
 
 def main():
     vocab = build_vocab(rawdata='./raw/train_val_videodatainfo.json', threshold=5)
-    save_file_name = 'vocab.pkl'
+    feat_save_path = './feats'
+    if not os.path.exists(feat_save_path):
+        os.mkdir(feat_save_path)
+    save_file_name = os.path.join(feat_save_path, 'vocab.pkl')
     with open(save_file_name, 'wb') as f:
         pickle.dump(vocab, f)
-    print('Saved vocabulary file to ' + save_file_name)
+    print('Save vocabulary to %s.' % save_file_name)
 
 
 if __name__ == '__main__':

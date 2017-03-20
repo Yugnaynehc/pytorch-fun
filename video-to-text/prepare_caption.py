@@ -1,3 +1,6 @@
+# coding: utf-8
+
+import os
 import json
 import pickle
 from vocab import Vocabulary
@@ -11,7 +14,7 @@ def main():
     放回caption word_id list和video_id list
     '''
     # 读取词汇字典
-    with open('./vocab.pkl', 'rb') as f:
+    with open('./feats/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
 
     # 读取json文件
@@ -29,9 +32,15 @@ def main():
             tokens.append(vocab(word))
         tokens.append(vocab('<end>'))
         captions.append(torch.LongTensor(tokens))
-        video_ids.append(row['video_id'])
-    with open('captions.pkl', 'wb') as f:
-        pickle.dump([captions, video_ids])
+        video_ids.append(int(row['video_id'][5:]))
+
+    feat_save_path = './feats'
+    if not os.path.exists(feat_save_path):
+        os.mkdir(feat_save_path)
+    save_file_name = os.path.join(feat_save_path, 'captions.pkl')
+    with open(save_file_name, 'wb') as f:
+        pickle.dump([captions, video_ids], f)
+    print('Save captions to %s.' % save_file_name)
 
 
 if __name__ == '__main__':

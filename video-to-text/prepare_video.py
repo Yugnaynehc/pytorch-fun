@@ -1,4 +1,5 @@
 # coding: utf-8
+
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -13,6 +14,7 @@ import torch.nn as nn
 import torchvision.models as models
 from torch.autograd import Variable
 import h5py
+import numpy as np
 
 
 def preprocess_frame(image, target_height=224, target_width=224):
@@ -65,7 +67,7 @@ def main():
     # 从视频中等间隔抽取60帧
     num_frames = 60
     # 设置一下数据读取和保存的目录
-    video_root = './video'
+    video_root = './raw/TrainValVideo/'
     feat_save_path = './feats'
     if not os.path.exists(feat_save_path):
         os.mkdir(feat_save_path)
@@ -75,12 +77,18 @@ def main():
     nvideos = len(videos)
 
     # 创建保存视频特征的hdf5文件
-    h5 = h5py.File(feat_save_path + 'videos.h5', 'w')
-    dataset_feats = h5.create_dataset('feats', (nvideos, num_frames, 512, 7, 7), dtype='float32')
+    saved_path = os.path.join(feat_save_path, 'videos.h5')
+    if os.path.exists(saved_path):
+        # 如果hdf5文件已经存在，说明之前处理过，或许是没有完全处理完
+        # 使用r+ (read and write)模式读取，以免覆盖掉之前保存好的数据
+        h5 = h5py.File(saved_path, 'r+')
+        dataset_feats = h5['feats']
+    else:
+        h5 = h5py.File(saved_path, 'w')
+        dataset_feats = h5.create_dataset('feats', (nvideos, num_frames, 512, 7, 7), dtype='float32')
 
     for i, video in enumerate(videos):
         print(video)
-
         video_path = os.path.join(video_root, video)
         try:
             cap = cv2.VideoCapture(video_path)
@@ -113,8 +121,8 @@ def main():
 
         # 视频特征的shape是num_frames x 512 x 7 x 7
         # 如果帧的数量小于num_frames，则剩余的部分用0补足
-        feats = torch.LongTensor.zeros(num_frames, 512, 7, 7)
-        feats[:frame_count, :] = vgg.features(cropped_frame_list).data
+        feats = np.zeros((num_frames, 512, 7, 7), dtype='float32')
+        feats[:frame_count, :] = vgg.features(cropped_frame_list).data.cpu().numpy()
         dataset_feats[i] = feats
 
 

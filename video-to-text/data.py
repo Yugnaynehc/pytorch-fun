@@ -28,8 +28,8 @@ class MsrDataset(data.Dataset):
         '''
         caption = self.captions[index]
         video_id = self.video_ids[index]
-        video_feat = self.video_feats[video_id]
-        return caption, video_feat
+        video_feat = torch.from_numpy(self.video_feats[video_id])
+        return video_feat, caption
 
     def __len__(self):
         return len(self.captions)
@@ -50,7 +50,7 @@ def collate_fn(data):
 
     # 把caption合并在一起（把1D Tensor的序列变成一个2D Tensor）
     lengths = [len(c) for c in raw_captions]
-    captions = torch.LongTensor.zeros(len(raw_captions), max(lengths))
+    captions = torch.zeros(len(raw_captions), max(lengths)).long()
     for i, cap in enumerate(raw_captions):
         end = lengths[i]
         captions[i, :end] = cap
@@ -65,3 +65,10 @@ def get_loader(cap_pkl, video_h5, batch_size=10, shuffle=True, num_workers=2):
                                               num_workers=num_workers,
                                               collate_fn=collate_fn)
     return data_loader
+
+
+if __name__ == '__main__':
+    cap_pkl = './feats/captions.pkl'
+    video_h5 = './feats/videos.h5'
+    train_loader = get_loader(cap_pkl, video_h5)
+    print(next(iter(train_loader)))
