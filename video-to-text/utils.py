@@ -45,6 +45,8 @@ def decode_tokens(tokens, vocab):
     for token in tokens:
         word = vocab.idx2word[token]
         words.append(word)
+        if token == vocab('<end>'):
+            break
         cnt += len(word)
         if cnt > 47:
             words.append('\n')

@@ -49,11 +49,14 @@ for epoch in range(num_epochs):
 
         optimizer.zero_grad()
         outputs = decoder(videos, targets)
+        # 因为在一个epoch快要结束的时候，有可能采不到一个刚好的batch
+        # 所以要重新计算一下batch size
+        bsz = len(captions)
         # 把output压缩（剔除pad的部分）之后拉直
-        outputs = torch.cat([outputs[j][:lengths[j]] for j in range(batch_size)], 0)
+        outputs = torch.cat([outputs[j][:lengths[j]] for j in range(bsz)], 0)
         outputs = outputs.view(-1, vocab_size)
         # 把target压缩（剔除pad的部分）之后拉直
-        targets = torch.cat([targets[j][:lengths[j]] for j in range(batch_size)], 0)
+        targets = torch.cat([targets[j][:lengths[j]] for j in range(bsz)], 0)
         targets = targets.view(-1)
         loss = criterion(outputs, targets)
         loss.backward()
@@ -63,6 +66,8 @@ for epoch in range(num_epochs):
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
                   (epoch, num_epochs, i, total_step, loss.data[0],
                    np.exp(loss.data[0])))
+            tokens = decoder.sample(videos).data[0].squeeze()
+            print(decode_tokens(tokens, vocab))
         if i % 200 == 0 and i > 0:
             torch.save(decoder, 'decoder.pth')
 

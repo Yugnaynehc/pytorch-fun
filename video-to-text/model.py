@@ -86,14 +86,14 @@ class DecoderRNN(nn.Module):
             hidden2 = tuple(v.cuda() for v in hidden2)
         return hidden1, hidden2
 
-    def forward(self, video_feats, captions):
+    def forward(self, video_feats, captions, teacher_forcing=True):
         '''
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
         而是用上一步的生成结果作为下一步的输入
         UPDATED: 最后还是采用了teacher forcing，不然很难收敛
         '''
-        batch_size = len(captions)
+        batch_size = len(video_feats)
 
         v = video_feats.view(-1, self.frame_size)
         v = self.linear1(v)
@@ -127,7 +127,7 @@ class DecoderRNN(nn.Module):
         word = self.embed(word)
         word = word.squeeze(1)
         for i in range(self.num_words):
-            if captions[:, i].data.sum() == 0:
+            if captions and captions[:, i].data.sum() == 0:
                 # <pad>的id是0，如果所有的word id都是0，
                 # 意味着所有的句子都结束了，没有必要再算了
                 break
@@ -135,16 +135,61 @@ class DecoderRNN(nn.Module):
             cat = torch.cat((word, hidden1[0]), 1)
             hidden2 = self.lstm2_cell(cat, hidden2)
             word_logits = self.log_softmax(self.linear2(hidden2[0]))
-            # 非 teacher forcing模式
-            # word_id = word_logits.max(1)[1]
-            # teacher forcing模式
-            word_id = captions[:, i]
+            if teacher_forcing:
+                # teacher forcing模式
+                word_id = captions[:, i]
+            else:
+                # 非 teacher forcing模式
+                word_id = word_logits.max(1)[1]
             word = self.embed(word_id).squeeze(1)
             outputs.append(word_logits)
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs
 
-    def sample(video_feats):
-        # 因为训练的时候没有采用teacher forcing
-        # 所以forward和sample是类似的
-        pass
+    def sample(self, video_feats):
+        '''
+        sample就是不给caption且不用teacher forcing的forward
+        '''
+        batch_size = len(video_feats)
+
+        v = video_feats.view(-1, self.frame_size)
+        v = self.linear1(v)
+        v = v.view(batch_size, self.num_frames, self.img_embed_size)
+
+        # 初始化encoding阶段的LSTM隐层
+        hidden1, hidden2 = self._init_hidden(batch_size)
+
+        # 为了在python2中使用惰性的range，需要安装future包
+        # sudo pip2 install future
+        for i in range(self.num_frames):
+            hidden1 = self.lstm1_cell(v[:, i, :], hidden1)
+            word_pad = Variable(torch.zeros(batch_size, self.word_embed_size),
+                                requires_grad=False)
+            if use_cuda:
+                word_pad = word_pad.cuda()
+            cat = torch.cat((word_pad, hidden1[0]), 1)
+            hidden2 = self.lstm2_cell(cat, hidden2)
+        video_pad = torch.zeros((batch_size, self.num_words, self.img_embed_size))
+        video_pad = Variable(video_pad, requires_grad=False)
+        if use_cuda:
+            video_pad = video_pad.cuda()
+
+        # 开始准备输出啦！
+        outputs = []
+        # 先送一个<start>标记
+        word_id = self.vocab('<start>')
+        word = Variable(torch.zeros(batch_size, 1).long().fill_(word_id))
+        if use_cuda:
+            word = word.cuda()
+        word = self.embed(word)
+        word = word.squeeze(1)
+        for i in range(self.num_words):
+            hidden1 = self.lstm1_cell(video_pad[:, i, :], hidden1)
+            cat = torch.cat((word, hidden1[0]), 1)
+            hidden2 = self.lstm2_cell(cat, hidden2)
+            word_logits = self.log_softmax(self.linear2(hidden2[0]))
+            word_id = word_logits.max(1)[1]
+            word = self.embed(word_id).squeeze(1)
+            outputs.append(word_id)
+        outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
+        return outputs
