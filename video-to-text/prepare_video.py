@@ -75,7 +75,7 @@ def main():
         cropped_frame_list = Variable(torch.from_numpy(cropped_frame_list),
                                       volatile=True).cuda()
 
-        # 视频特征的shape是num_frames x 512 x 7 x 7
+        # 视频特征的shape是num_frames x 4096
         # 如果帧的数量小于num_frames，则剩余的部分用0补足
         feats = np.zeros((num_frames, frame_size), dtype='float32')
         feats[:frame_count, :] = encoder(cropped_frame_list).data.cpu().numpy()

@@ -66,9 +66,9 @@ for epoch in range(num_epochs):
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
                   (epoch, num_epochs, i, total_step, loss.data[0],
                    np.exp(loss.data[0])))
+        if i % 200 == 0 and i > 0:
             tokens = decoder.sample(videos).data[0].squeeze()
             print(decode_tokens(tokens, vocab))
-        if i % 200 == 0 and i > 0:
             torch.save(decoder, 'decoder.pth')
 
 torch.save(decoder, 'decoder.pth')
