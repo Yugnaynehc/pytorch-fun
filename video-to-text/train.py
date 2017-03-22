@@ -16,6 +16,7 @@ from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
 from args import frame_size, num_frames, num_words
 from args import use_cuda
+from args import decoder_pth_path
 
 
 # 加载词典
@@ -66,9 +67,15 @@ for epoch in range(num_epochs):
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
                   (epoch, num_epochs, i, total_step, loss.data[0],
                    np.exp(loss.data[0])))
+            tokens = decoder.sample(videos).data[0].squeeze()
+            we = decode_tokens(tokens, vocab)
+            gt = decode_tokens(captions[0].squeeze(), vocab)
+            print('WE: %s\nGT: %s' % (we, gt))
         if i % 200 == 0 and i > 0:
             tokens = decoder.sample(videos).data[0].squeeze()
-            print(decode_tokens(tokens, vocab))
-            torch.save(decoder, 'decoder.pth')
+            we = decode_tokens(tokens, vocab)
+            gt = decode_tokens(captions[0].squeeze(), vocab)
+            print('WE: %s\nGT: %s' % (we, gt))
+            torch.save(decoder, decoder_pth_path)
 
-torch.save(decoder, 'decoder.pth')
+torch.save(decoder, decoder_pth_path)

@@ -55,36 +55,44 @@ class DecoderRNN(nn.Module):
         self.vocab = vocab
         self.vocab_size = len(vocab)
 
-        # linear1用来把视觉特征嵌入到低维空间
-        self.linear1 = nn.Linear(frame_size, img_embed_size)
-        # embed用来把文本特征嵌入到低维空间
-        self.embed = nn.Embedding(self.vocab_size, word_embed_size)
+        # video_embed用来把视觉特征嵌入到低维空间
+        self.video_embed = nn.Linear(frame_size, img_embed_size)
+        self.video_drop = nn.Dropout(p=0.5)
+        # word_embed用来把文本特征嵌入到低维空间
+        self.word_embed = nn.Embedding(self.vocab_size, word_embed_size)
+        self.word_drop = nn.Dropout(p=0.5)
         # lstm1_cell用来处理视觉特征
         self.lstm1_cell = nn.LSTMCell(img_embed_size, hidden1_size)
+        self.lstm1_drop = nn.Dropout(p=0.5)
         # lstm2_cell用来处理视觉和文本的融合特征
         self.lstm2_cell = nn.LSTMCell(word_embed_size + hidden1_size, hidden2_size)
-        # linear1用来把lstm的最终输出映射回文本空间
-        self.linear2 = nn.Linear(hidden2_size, self.vocab_size)
+        self.lstm2_drop = nn.Dropout(p=0.5)
+        # linear用来把lstm的最终输出映射回文本空间
+        self.linear = nn.Linear(hidden2_size, self.vocab_size)
         self.log_softmax = nn.LogSoftmax()
 
         self._init_weights()
 
     def _init_weights(self):
-        self.linear1.weight.data.uniform_(-0.1, 0.1)
-        self.linear1.bias.data.zero_()
-        self.embed.weight.data.uniform_(-0.1, 0.1)
-        self.linear2.weight.data.uniform_(-0.1, 0.1)
-        self.linear2.bias.data.zero_()
+        self.video_embed.weight.data.uniform_(-0.1, 0.1)
+        self.video_embed.bias.data.zero_()
+        self.word_embed.weight.data.uniform_(-0.1, 0.1)
+        self.linear.weight.data.uniform_(-0.1, 0.1)
+        self.linear.bias.data.zero_()
 
-    def _init_hidden(self, batch_size):
-        hidden1 = (Variable(torch.zeros(batch_size, self.hidden1_size)),
-                   Variable(torch.zeros(batch_size, self.hidden1_size)))
-        hidden2 = (Variable(torch.zeros(batch_size, self.hidden2_size)),
-                   Variable(torch.zeros(batch_size, self.hidden2_size)))
+    def _init_lstm_state(self, batch_size):
+        lstm1_hidden = Variable(torch.zeros(batch_size, self.hidden1_size))
+        lstm1_cell = Variable(torch.zeros(batch_size, self.hidden1_size))
+        lstm1_state = (lstm1_hidden, lstm1_cell)
+
+        lstm2_hidden = Variable(torch.zeros(batch_size, self.hidden2_size))
+        lstm2_cell = Variable(torch.zeros(batch_size, self.hidden2_size))
+        lstm2_state = (lstm2_hidden, lstm2_cell)
+
         if use_cuda:
-            hidden1 = tuple(v.cuda() for v in hidden1)
-            hidden2 = tuple(v.cuda() for v in hidden2)
-        return hidden1, hidden2
+            lstm1_state = tuple(v.cuda() for v in lstm1_state)
+            lstm2_state = tuple(v.cuda() for v in lstm2_state)
+        return lstm1_state, lstm2_state
 
     def forward(self, video_feats, captions, teacher_forcing=True):
         '''
@@ -96,27 +104,36 @@ class DecoderRNN(nn.Module):
         batch_size = len(video_feats)
 
         v = video_feats.view(-1, self.frame_size)
-        v = self.linear1(v)
+        v = self.video_embed(v)
+        v = self.video_drop(v)
         v = v.view(batch_size, self.num_frames, self.img_embed_size)
 
-        # 初始化encoding阶段的LSTM隐层
-        hidden1, hidden2 = self._init_hidden(batch_size)
+        # 初始化LSTM隐层
+        lstm1_state, lstm2_state = self._init_lstm_state(batch_size)
+        lstm1_hidden, lstm1_cell = lstm1_state
+        lstm2_hidden, lstm2_cell = lstm2_state
 
         # 为了在python2中使用惰性的range，需要安装future包
         # sudo pip2 install future
+        # Encoding 阶段！
         for i in range(self.num_frames):
-            hidden1 = self.lstm1_cell(v[:, i, :], hidden1)
+            lstm1_hidden, lstm1_cell = self.lstm1_cell(v[:, i, :],
+                                                       (lstm1_hidden, lstm1_cell))
+            lstm1_hidden = self.lstm1_drop(lstm1_hidden)
             word_pad = Variable(torch.zeros(batch_size, self.word_embed_size),
                                 requires_grad=False)
             if use_cuda:
                 word_pad = word_pad.cuda()
-            cat = torch.cat((word_pad, hidden1[0]), 1)
-            hidden2 = self.lstm2_cell(cat, hidden2)
+            cat = torch.cat((word_pad, lstm1_hidden), 1)
+            lstm2_hidden, lstm2_cell = self.lstm2_cell(cat,
+                                                       (lstm2_hidden, lstm2_cell))
+            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
         video_pad = torch.zeros((batch_size, self.num_words, self.img_embed_size))
         video_pad = Variable(video_pad, requires_grad=False)
         if use_cuda:
             video_pad = video_pad.cuda()
 
+        # Decoding 阶段！
         # 开始准备输出啦！
         outputs = []
         # 先送一个<start>标记
@@ -124,24 +141,30 @@ class DecoderRNN(nn.Module):
         word = Variable(torch.zeros(batch_size, 1).long().fill_(word_id))
         if use_cuda:
             word = word.cuda()
-        word = self.embed(word)
+        word = self.word_embed(word)
+        word = self.word_drop(word)
         word = word.squeeze(1)
         for i in range(self.num_words):
             if captions and captions[:, i].data.sum() == 0:
                 # <pad>的id是0，如果所有的word id都是0，
                 # 意味着所有的句子都结束了，没有必要再算了
                 break
-            hidden1 = self.lstm1_cell(video_pad[:, i, :], hidden1)
-            cat = torch.cat((word, hidden1[0]), 1)
-            hidden2 = self.lstm2_cell(cat, hidden2)
-            word_logits = self.log_softmax(self.linear2(hidden2[0]))
+            lstm1_hidden, lstm1_cell = self.lstm1_cell(video_pad[:, i, :],
+                                                       (lstm1_hidden, lstm1_cell))
+            lstm1_hidden = self.lstm1_drop(lstm1_hidden)
+            cat = torch.cat((word, lstm1_hidden), 1)
+            lstm2_hidden, lstm2_cell = self.lstm2_cell(cat,
+                                                       (lstm2_hidden, lstm2_cell))
+            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
+            word_logits = self.log_softmax(self.linear(lstm2_hidden))
             if teacher_forcing:
                 # teacher forcing模式
                 word_id = captions[:, i]
             else:
                 # 非 teacher forcing模式
                 word_id = word_logits.max(1)[1]
-            word = self.embed(word_id).squeeze(1)
+            word = self.word_embed(word_id).squeeze(1)
+            word = self.word_drop(word)
             outputs.append(word_logits)
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs
@@ -153,27 +176,36 @@ class DecoderRNN(nn.Module):
         batch_size = len(video_feats)
 
         v = video_feats.view(-1, self.frame_size)
-        v = self.linear1(v)
+        v = self.video_embed(v)
+        v = self.video_drop(v)
         v = v.view(batch_size, self.num_frames, self.img_embed_size)
 
-        # 初始化encoding阶段的LSTM隐层
-        hidden1, hidden2 = self._init_hidden(batch_size)
+        # 初始化LSTM隐层
+        lstm1_state, lstm2_state = self._init_lstm_state(batch_size)
+        lstm1_hidden, lstm1_cell = lstm1_state
+        lstm2_hidden, lstm2_cell = lstm2_state
 
         # 为了在python2中使用惰性的range，需要安装future包
         # sudo pip2 install future
+        # Encoding 阶段！
         for i in range(self.num_frames):
-            hidden1 = self.lstm1_cell(v[:, i, :], hidden1)
+            lstm1_hidden, lstm1_cell = self.lstm1_cell(v[:, i, :],
+                                                       (lstm1_hidden, lstm1_cell))
+            lstm1_hidden = self.lstm1_drop(lstm1_hidden)
             word_pad = Variable(torch.zeros(batch_size, self.word_embed_size),
                                 requires_grad=False)
             if use_cuda:
                 word_pad = word_pad.cuda()
-            cat = torch.cat((word_pad, hidden1[0]), 1)
-            hidden2 = self.lstm2_cell(cat, hidden2)
+            cat = torch.cat((word_pad, lstm1_hidden), 1)
+            lstm2_hidden, lstm2_cell = self.lstm2_cell(cat,
+                                                       (lstm2_hidden, lstm2_cell))
+            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
         video_pad = torch.zeros((batch_size, self.num_words, self.img_embed_size))
         video_pad = Variable(video_pad, requires_grad=False)
         if use_cuda:
             video_pad = video_pad.cuda()
 
+        # Decoding 阶段！
         # 开始准备输出啦！
         outputs = []
         # 先送一个<start>标记
@@ -181,15 +213,21 @@ class DecoderRNN(nn.Module):
         word = Variable(torch.zeros(batch_size, 1).long().fill_(word_id))
         if use_cuda:
             word = word.cuda()
-        word = self.embed(word)
+        word = self.word_embed(word)
+        word = self.word_drop(word)
         word = word.squeeze(1)
         for i in range(self.num_words):
-            hidden1 = self.lstm1_cell(video_pad[:, i, :], hidden1)
-            cat = torch.cat((word, hidden1[0]), 1)
-            hidden2 = self.lstm2_cell(cat, hidden2)
-            word_logits = self.log_softmax(self.linear2(hidden2[0]))
+            lstm1_hidden, lstm1_cell = self.lstm1_cell(video_pad[:, i, :],
+                                                       (lstm1_hidden, lstm1_cell))
+            lstm1_hidden = self.lstm1_drop(lstm1_hidden)
+            cat = torch.cat((word, lstm1_hidden), 1)
+            lstm2_hidden, lstm2_cell = self.lstm2_cell(cat,
+                                                       (lstm2_hidden, lstm2_cell))
+            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
+            word_logits = self.log_softmax(self.linear(lstm2_hidden))
             word_id = word_logits.max(1)[1]
-            word = self.embed(word_id).squeeze(1)
+            word = self.word_embed(word_id).squeeze(1)
+            word = self.word_drop(word)
             outputs.append(word_id)
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs

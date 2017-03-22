@@ -7,15 +7,15 @@ import os
 
 # 训练相关的超参数
 num_epochs = 1
-batch_size = 64
+batch_size = 10
 learning_rate = 1e-3
 use_cuda = True
 
 # 模型相关的超参数
-img_embed_size = 1000
+img_embed_size = 500
 word_embed_size = 500
-hidden1_size = 1024  # 第一个LSTM层的隐层单元数目
-hidden2_size = 1024  # 第二个KSTM层的隐层单元数目
+hidden1_size = 1000  # 第一个LSTM层的隐层单元数目
+hidden2_size = 1000  # 第二个KSTM层的隐层单元数目
 
 # frame_shape = (512, 7, 7)  # 视屏帧特征的形状
 frame_size = 4096  # 视频特征的维度
@@ -37,3 +37,4 @@ video_h5_dataset = 'feats'
 
 # checkpoint相关的超参数
 vgg_checkpoint = './models/vgg16-00b39a1b.pth'
+decoder_pth_path = './decoder.pth'

@@ -8,8 +8,10 @@ from torch.autograd import Variable
 from vocab import Vocabulary
 from model import EncoderCNN
 from args import video_root, vocab_pkl_path, num_frames, frame_size
+from args import decoder_pth_path
 from utils import preprocess_frame, decode_tokens
 import numpy as np
+import random
 
 
 with open(vocab_pkl_path, 'rb') as f:
@@ -17,14 +19,17 @@ with open(vocab_pkl_path, 'rb') as f:
 
 # 载入预训练模型
 encoder = EncoderCNN()
-decoder = torch.load('./decoder.pth')
+decoder = torch.load(decoder_pth_path)
 encoder.eval()
 encoder.cuda()
 decoder.eval()
 decoder.cuda()
 
 # 载入视频
-video_path = os.path.join(video_root, 'video1000.mp4')
+videos = os.listdir(video_root)
+video = random.choice(videos)
+video_path = os.path.join(video_root, video)
+print(video_path)
 try:
     cap = cv2.VideoCapture(video_path)
 except:
