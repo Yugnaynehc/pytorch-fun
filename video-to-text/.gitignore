@@ -1,6 +1,8 @@
 .ipynb_checkpoints/
 models
 raw
+MSR-VTT
+MSVD
 video
 feats
 *.npy

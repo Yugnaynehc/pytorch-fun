@@ -12,6 +12,7 @@ from torch.autograd import Variable
 import torchvision.models as models
 from builtins import range
 from args import use_cuda, vgg_checkpoint
+import random
 
 
 class EncoderCNN(nn.Module):
@@ -21,9 +22,9 @@ class EncoderCNN(nn.Module):
         self.vgg = models.vgg16()
         self.vgg.load_state_dict(torch.load(vgg_checkpoint))
 
-        # 用一种笨方法把VGG的最后一个fc层（及其之前的ReLU层）剔除掉
+        # 用一种笨方法把VGG的最后一个fc层（其之前的ReLU层要保留）剔除掉
         self.vgg.classifier = nn.Sequential(
-            *(self.vgg.classifier[i] for i in range(5)))
+            *(self.vgg.classifier[i] for i in range(6)))
 
     def forward(self, images):
         return self.vgg(images)
@@ -94,7 +95,7 @@ class DecoderRNN(nn.Module):
             lstm2_state = tuple(v.cuda() for v in lstm2_state)
         return lstm1_state, lstm2_state
 
-    def forward(self, video_feats, captions, teacher_forcing=True):
+    def forward(self, video_feats, captions, teacher_forcing_ratio=0.5):
         '''
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
@@ -157,7 +158,8 @@ class DecoderRNN(nn.Module):
                                                        (lstm2_hidden, lstm2_cell))
             lstm2_hidden = self.lstm2_drop(lstm2_hidden)
             word_logits = self.log_softmax(self.linear(lstm2_hidden))
-            if teacher_forcing:
+            use_teacher_forcing = random.random() > teacher_forcing_ratio
+            if use_teacher_forcing:
                 # teacher forcing模式
                 word_id = captions[:, i]
             else:
@@ -166,6 +168,9 @@ class DecoderRNN(nn.Module):
             word = self.word_embed(word_id).squeeze(1)
             word = self.word_drop(word)
             outputs.append(word_logits)
+        # unsqueeze(1)会把一个向量(n)拉成列向量(nx1)
+        # outputs中的每一个向量都是整个batch在某个时间步的输出
+        # 把它拉成列向量之后再横着拼起来，就能得到整个batch在所有时间步的输出
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs
 

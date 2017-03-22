@@ -13,6 +13,7 @@ import torch
 from torch.autograd import Variable
 import h5py
 from args import video_root, feat_save_path, video_h5_path, video_h5_dataset
+from args import video_sort_lambda
 from args import frame_size
 
 
@@ -28,7 +29,7 @@ def main():
         os.mkdir(feat_save_path)
 
     # 读取视频列表，让视频按照id升序排列
-    videos = sorted(os.listdir(video_root), key=lambda x: int(x[5:-4]))
+    videos = sorted(os.listdir(video_root), key=video_sort_lambda)
     nvideos = len(videos)
 
     # 创建保存视频特征的hdf5文件
