@@ -7,9 +7,10 @@ import torch.utils.data as data
 from args import caption_pkl_path, video_h5_path, video_h5_dataset
 
 
-class MsrDataset(data.Dataset):
+class V2TDataset(data.Dataset):
     '''
-    MSR-VTT数据集的描述类，用来加载和提供数据
+    Video to Text数据集的描述类，用来加载和提供数据
+    支持MSR-VTT和MSVD数据集
     构造的时候需要以下输入：
     1. 提供文本特征的pkl文件
     2. 包含视频帧信息的h5文件
@@ -52,8 +53,8 @@ def collate_fn(data):
 
 
 def get_loader(cap_pkl, video_h5, batch_size=10, shuffle=True, num_workers=2):
-    msr_vtt = MsrDataset(cap_pkl, video_h5)
-    data_loader = torch.utils.data.DataLoader(dataset=msr_vtt,
+    v2t = V2TDataset(cap_pkl, video_h5)
+    data_loader = torch.utils.data.DataLoader(dataset=v2t,
                                               batch_size=batch_size,
                                               shuffle=shuffle,
                                               num_workers=num_workers,

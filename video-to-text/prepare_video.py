@@ -14,7 +14,7 @@ from torch.autograd import Variable
 import h5py
 from args import video_root, feat_save_path, video_h5_path, video_h5_dataset
 from args import video_sort_lambda
-from args import frame_size
+from args import num_frames, frame_size
 
 
 def main():
@@ -22,8 +22,6 @@ def main():
     encoder.eval()
     encoder.cuda()
 
-    # 从视频中等间隔抽取60帧
-    num_frames = 60
     # 设置一下数据读取和保存的目录
     if not os.path.exists(feat_save_path):
         os.mkdir(feat_save_path)

@@ -30,9 +30,7 @@ total_step = len(train_loader)
 
 # 构建模型
 decoder = DecoderRNN(frame_size, img_embed_size, hidden1_size, word_embed_size,
-                     hidden2_size, num_frames, num_words, vocab)
-if use_cuda:
-    decoder.cuda()
+                     hidden2_size, num_frames, num_words, vocab, use_cuda)
 
 # 初始化损失函数和优化器
 criterion = nn.NLLLoss()
@@ -72,10 +70,6 @@ for epoch in range(num_epochs):
             gt = decode_tokens(captions[0].squeeze(), vocab)
             print('WE: %s\nGT: %s' % (we, gt))
         if i % 200 == 0 and i > 0:
-            tokens = decoder.sample(videos).data[0].squeeze()
-            we = decode_tokens(tokens, vocab)
-            gt = decode_tokens(captions[0].squeeze(), vocab)
-            print('WE: %s\nGT: %s' % (we, gt))
             torch.save(decoder, decoder_pth_path)
 
 torch.save(decoder, decoder_pth_path)

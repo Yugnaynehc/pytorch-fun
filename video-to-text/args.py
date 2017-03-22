@@ -8,7 +8,7 @@ import os
 # 训练相关的超参数
 num_epochs = 1
 batch_size = 32
-learning_rate = 1e-3
+learning_rate = 3e-4
 use_cuda = True
 
 # 模型相关的超参数
@@ -19,7 +19,7 @@ hidden2_size = 1000  # 第二个KSTM层的隐层单元数目
 
 # frame_shape = (512, 7, 7)  # 视屏帧特征的形状
 frame_size = 4096  # 视频特征的维度
-num_frames = 60  # 图像序列的规定长度
+num_frames = 80  # 图像序列的规定长度
 num_words = 30  # 文本序列的规定长度
 
 
@@ -54,5 +54,6 @@ video_h5_dataset = 'feats'
 
 
 # checkpoint相关的超参数
-vgg_checkpoint = './models/vgg16-00b39a1b.pth'
+vgg_checkpoint = './models/vgg16-00b39a1b.pth'  # 从caffe转换而来
+# vgg_checkpoint = './models/vgg16-397923af.pth'  # 直接用pytorch训练的模型
 decoder_pth_path = ds + '_decoder.pth'

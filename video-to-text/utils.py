@@ -18,8 +18,8 @@ def preprocess_frame(image, target_height=224, target_width=224):
         image = np.tile(image[:, :, None], 3)
     elif len(image.shape) == 4:
         image = image[:, :, :, 0]
-
     image = skimage.img_as_float(image).astype(np.float32)
+    image -= np.array([103.939, 116.779, 123.68])
     height, width, channels = image.shape
     if height == width:
         resized_image = cv2.resize(image, (target_height, target_width))
