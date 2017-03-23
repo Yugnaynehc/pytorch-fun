@@ -35,7 +35,7 @@ def main():
         lengths.append(l)
         if l > num_words:
             # 如果caption长度超出了规定的长度，就做截取处理
-            words = words[:num_words - 1]
+            words = words[:num_words - 1]  # 最后要留一个位置给<end>
             count += 1
         # 把caption用word id来表示
         tokens = []

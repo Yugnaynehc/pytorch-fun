@@ -17,10 +17,11 @@ word_embed_size = 500
 hidden1_size = 1000  # 第一个LSTM层的隐层单元数目
 hidden2_size = 1000  # 第二个KSTM层的隐层单元数目
 
-# frame_shape = (512, 7, 7)  # 视屏帧特征的形状
+# frame_shape = (512, 7, 7)  # 视频帧特征的形状
 frame_size = 4096  # 视频特征的维度
-num_frames = 80  # 图像序列的规定长度
-num_words = 30  # 文本序列的规定长度
+frame_sample_rate = 10  # 视频帧的采样率
+num_frames = 10  # 图像序列的规定长度
+num_words = 20  # 文本序列的规定长度
 
 
 # 数据相关的参数

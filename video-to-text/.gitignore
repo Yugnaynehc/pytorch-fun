@@ -1,8 +1,14 @@
 .ipynb_checkpoints/
 models
+models/
 raw
+raw/
 MSR-VTT
+MSR-VTT/
 MSVD
+MSVD/
 video
+video/
 feats
+feats/
 *.npy

@@ -14,7 +14,7 @@ from torch.autograd import Variable
 import h5py
 from args import video_root, feat_save_path, video_h5_path, video_h5_dataset
 from args import video_sort_lambda
-from args import num_frames, frame_size
+from args import frame_sample_rate, num_frames, frame_size
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
                                           dtype='float32')
 
     for i, video in enumerate(videos):
-        print(video)
+        print(video, end=' ')
         video_path = os.path.join(video_root, video)
         try:
             cap = cv2.VideoCapture(video_path)
@@ -54,18 +54,26 @@ def main():
         frame_count = 0
         frame_list = []
 
+        # 每frame_sample_rate（10）帧采1帧
+        count = 1
         while True:
             ret, frame = cap.read()
             if ret is False:
                 break
-            frame_list.append(frame)
-            frame_count += 1
+            count += 1
+            if count % frame_sample_rate == 0:
+                frame_list.append(frame)
+                frame_count += 1
+                count = 1
 
+        print(frame_count)
         frame_list = np.array(frame_list)
         if frame_count > num_frames:
-            frame_indices = np.linspace(0, frame_count,
-                                        num=num_frames, endpoint=False).astype(int)
-            frame_list = frame_list[frame_indices]
+            # 等间隔地取一些帧
+            # frame_indices = np.linspace(0, frame_count,
+            #                             num=num_frames, endpoint=False).astype(int)
+            # 直接截断
+            frame_list = frame_list[:num_frames]
             frame_count = num_frames
 
         # 把图像做一下处理，然后转换成（batch, channel, height, width）的格式

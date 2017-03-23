@@ -44,7 +44,7 @@ class Vocabulary(object):
         '''
         得到词汇表中词汇的数量
         '''
-        return len(self.word2idx)
+        return self.nwords
 
 
 def build_vocab(rawdata, threshold):

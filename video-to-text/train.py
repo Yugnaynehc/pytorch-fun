@@ -30,10 +30,12 @@ total_step = len(train_loader)
 
 # 构建模型
 decoder = DecoderRNN(frame_size, img_embed_size, hidden1_size, word_embed_size,
-                     hidden2_size, num_frames, num_words, vocab, use_cuda)
+                     hidden2_size, num_frames, num_words, vocab)
+if use_cuda:
+    decoder.cuda()
 
 # 初始化损失函数和优化器
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
 
 # 训练模型
