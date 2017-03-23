@@ -63,7 +63,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        if i % 10 == 0:
+        if i % 100 == 0:
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
                   (epoch, num_epochs, i, total_step, loss.data[0],
                    np.exp(loss.data[0])))
@@ -71,7 +71,7 @@ for epoch in range(num_epochs):
             we = decode_tokens(tokens, vocab)
             gt = decode_tokens(captions[0].squeeze(), vocab)
             print('WE: %s\nGT: %s' % (we, gt))
-        if i % 200 == 0 and i > 0:
-            torch.save(decoder, decoder_pth_path)
+        # if i % 200 == 0 and i > 0:
+        #     torch.save(decoder, decoder_pth_path)
 
 torch.save(decoder, decoder_pth_path)

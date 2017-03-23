@@ -6,13 +6,13 @@
 import os
 
 # 训练相关的超参数
-num_epochs = 1
-batch_size = 32
+num_epochs = 100
+batch_size = 100
 learning_rate = 3e-4
 use_cuda = True
 
 # 模型相关的超参数
-img_embed_size = 500
+img_embed_size = 1000
 word_embed_size = 500
 hidden1_size = 1000  # 第一个LSTM层的隐层单元数目
 hidden2_size = 1000  # 第二个KSTM层的隐层单元数目

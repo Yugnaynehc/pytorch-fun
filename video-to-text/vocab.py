@@ -75,11 +75,12 @@ def build_vocab(rawdata, threshold):
 
 def main():
     vocab = build_vocab(rawdata=anno_json_path, threshold=5)
+    print('Vocabulary has %d words.' % len(vocab))
     if not os.path.exists(feat_save_path):
         os.mkdir(feat_save_path)
     with open(vocab_pkl_path, 'wb') as f:
         pickle.dump(vocab, f)
-    print('Save vocabulary to %s.' % vocab_pkl_path)
+    print('Save vocabulary to %s' % vocab_pkl_path)
 
 
 if __name__ == '__main__':
