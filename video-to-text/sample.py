@@ -7,7 +7,8 @@ import torch
 from torch.autograd import Variable
 from vocab import Vocabulary
 from model import EncoderCNN
-from args import video_root, vocab_pkl_path, num_frames, frame_size
+from args import video_root, vocab_pkl_path
+from args import frame_sample_rate, num_frames, frame_size
 from args import decoder_pth_path
 from utils import preprocess_frame, decode_tokens
 import numpy as np
@@ -39,18 +40,23 @@ except:
 frame_count = 0
 frame_list = []
 
+count = 1
 while True:
     ret, frame = cap.read()
     if ret is False:
         break
-    frame_list.append(frame)
-    frame_count += 1
+    count += 1
+    if count % frame_sample_rate == 0:
+        frame_list.append(frame)
+        frame_count += 1
+        count = 1
 
 frame_list = np.array(frame_list)
 if frame_count > num_frames:
-    frame_indices = np.linspace(0, frame_count,
-                                num=num_frames, endpoint=False).astype(int)
-    frame_list = frame_list[frame_indices]
+    # frame_indices = np.linspace(0, frame_count,
+    #                             num=num_frames, endpoint=False).astype(int)
+    # 直接截断
+    frame_list = frame_list[:num_frames]
     frame_count = num_frames
 
 # 把图像做一下处理，然后转换成（batch, channel, height, width）的格式

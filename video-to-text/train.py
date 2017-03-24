@@ -39,6 +39,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
 
 # 训练模型
+loss_count = 0
 for epoch in range(num_epochs):
     for i, (videos, captions, lengths) in enumerate(train_loader):
         # 构造mini batch的Variable
@@ -60,13 +61,16 @@ for epoch in range(num_epochs):
         targets = torch.cat([targets[j][:lengths[j]] for j in range(bsz)], 0)
         targets = targets.view(-1)
         loss = criterion(outputs, targets)
+        loss_count += loss.data[0]
         loss.backward()
         optimizer.step()
 
-        if i % 100 == 0:
+        if i % 10 == 0:
+            loss_count /= 10
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
-                  (epoch, num_epochs, i, total_step, loss.data[0],
-                   np.exp(loss.data[0])))
+                  (epoch, num_epochs, i, total_step, loss_count,
+                   np.exp(loss_count)))
+            loss_count = 0
             tokens = decoder.sample(videos).data[0].squeeze()
             we = decode_tokens(tokens, vocab)
             gt = decode_tokens(captions[0].squeeze(), vocab)
