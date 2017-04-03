@@ -7,12 +7,12 @@ from __future__ import absolute_import
 import os
 import cv2
 import numpy as np
-from utils import preprocess_frame
+from utils import resize_frame
 from model import EncoderCNN
 import torch
 from torch.autograd import Variable
 import h5py
-from args import video_root, feat_save_path, video_h5_path, video_h5_dataset
+from args import video_root, feat_dir, video_h5_path, video_h5_dataset
 from args import video_sort_lambda
 from args import frame_sample_rate, num_frames, frame_size
 
@@ -23,8 +23,8 @@ def main():
     encoder.cuda()
 
     # 设置一下数据读取和保存的目录
-    if not os.path.exists(feat_save_path):
-        os.mkdir(feat_save_path)
+    if not os.path.exists(feat_dir):
+        os.mkdir(feat_dir)
 
     # 读取视频列表，让视频按照id升序排列
     videos = sorted(os.listdir(video_root), key=video_sort_lambda)
@@ -41,7 +41,6 @@ def main():
         dataset_feats = h5.create_dataset(video_h5_dataset,
                                           (nvideos, num_frames, frame_size),
                                           dtype='float32')
-
     for i, video in enumerate(videos):
         print(video, end=' ')
         video_path = os.path.join(video_root, video)
@@ -55,29 +54,29 @@ def main():
         frame_list = []
 
         # 每frame_sample_rate（10）帧采1帧
-        count = 1
+        count = 0
         while True:
             ret, frame = cap.read()
             if ret is False:
                 break
-            count += 1
             if count % frame_sample_rate == 0:
                 frame_list.append(frame)
                 frame_count += 1
-                count = 1
+            count += 1
 
         print(frame_count)
         frame_list = np.array(frame_list)
         if frame_count > num_frames:
             # 等间隔地取一些帧
-            # frame_indices = np.linspace(0, frame_count,
-            #                             num=num_frames, endpoint=False).astype(int)
+            frame_indices = np.linspace(0, frame_count,
+                                        num=num_frames, endpoint=False).astype(int)
+            frame_list = frame_list[frame_indices]
             # 直接截断
-            frame_list = frame_list[:num_frames]
+            # frame_list = frame_list[:num_frames]
             frame_count = num_frames
 
         # 把图像做一下处理，然后转换成（batch, channel, height, width）的格式
-        cropped_frame_list = np.array([preprocess_frame(x)
+        cropped_frame_list = np.array([resize_frame(x)
                                        for x in frame_list]).transpose((0, 3, 1, 2))
         cropped_frame_list = Variable(torch.from_numpy(cropped_frame_list),
                                       volatile=True).cuda()

@@ -12,3 +12,4 @@ video/
 feats
 feats/
 *.npy
+results/

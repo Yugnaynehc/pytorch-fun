@@ -8,8 +8,9 @@ from __future__ import print_function
 import os
 import pickle
 import json
+import nltk
 from collections import Counter
-from args import anno_json_path, feat_save_path, vocab_pkl_path
+from args import anno_json_path, feat_dir, vocab_pkl_path
 
 
 class Vocabulary(object):
@@ -59,13 +60,17 @@ def build_vocab(rawdata, threshold):
     for i, row in enumerate(sentences):
         caption = row['caption']
         # 直接按照空格进行单词的切分
-        tokens = caption.lower().split(' ')
+        # tokens = caption.lower().split(' ')
+        # 使用nltk来进行单词切分
+        tokens = nltk.tokenize.word_tokenize(caption.lower())
         counter.update(tokens)
         if i % 1000 == 0:
             print('[{}/{}] tokenized the captions.'.format(i, ncaptions))
 
     # 略去一些低频词
     words = [w for w, c in counter.items() if c >= threshold]
+    # 剔除掉 '.' 这个符号，用<end>代替
+    words.remove('.')
     # 开始构建词典！
     vocab = Vocabulary()
     for w in words:
@@ -74,10 +79,10 @@ def build_vocab(rawdata, threshold):
 
 
 def main():
-    vocab = build_vocab(rawdata=anno_json_path, threshold=5)
+    vocab = build_vocab(rawdata=anno_json_path, threshold=3)
     print('Vocabulary has %d words.' % len(vocab))
-    if not os.path.exists(feat_save_path):
-        os.mkdir(feat_save_path)
+    if not os.path.exists(feat_dir):
+        os.mkdir(feat_dir)
     with open(vocab_pkl_path, 'wb') as f:
         pickle.dump(vocab, f)
     print('Save vocabulary to %s' % vocab_pkl_path)

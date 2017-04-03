@@ -38,10 +38,14 @@ if use_cuda:
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
 
+# 打印训练环境的参数设置情况
+print('Learning rate: %.4f' % learning_rate)
+print('Batch size: %d' % batch_size)
+
 # 训练模型
 loss_count = 0
 for epoch in range(num_epochs):
-    for i, (videos, captions, lengths) in enumerate(train_loader):
+    for i, (videos, captions, lengths, _) in enumerate(train_loader):
         # 构造mini batch的Variable
         videos = Variable(videos)
         targets = Variable(captions)
@@ -75,7 +79,6 @@ for epoch in range(num_epochs):
             we = decode_tokens(tokens, vocab)
             gt = decode_tokens(captions[0].squeeze(), vocab)
             print('WE: %s\nGT: %s' % (we, gt))
-        # if i % 200 == 0 and i > 0:
-        #     torch.save(decoder, decoder_pth_path)
+    torch.save(decoder.state_dict(), decoder_pth_path)
 
-torch.save(decoder, decoder_pth_path)
+torch.save(decoder.state_dict(), decoder_pth_path)
