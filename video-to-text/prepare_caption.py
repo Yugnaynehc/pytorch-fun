@@ -6,8 +6,7 @@ import nltk
 import pickle
 from vocab import Vocabulary
 import torch
-from args import anno_json_path, split_json_path
-from args import feat_dir, vocab_pkl_path
+from args import anno_json_path, split_json_path, vocab_pkl_path
 from args import caption_train_pkl_path, caption_val_pkl_path, caption_test_pkl_path
 from args import num_words  # 文本序列的规定长度
 
@@ -66,9 +65,6 @@ def main():
 
     # 统计一下有多少的caption长度过长
     print('There are %.3f%% too long captions' % (100 * float(count) / len(anno_data)))
-
-    if not os.path.exists(feat_dir):
-        os.mkdir(feat_dir)
 
     # 分别对train val test这三个划分进行存储
     with open(caption_train_pkl_path, 'wb') as f:

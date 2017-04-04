@@ -61,6 +61,8 @@ video_root, video_sort_lambda, anno_json_path, split_json_path, \
     train_range, val_range, test_range = dataset[ds]
 
 feat_dir = 'feats'
+if not os.path.exists(feat_dir):
+    os.mkdir(feat_dir)
 
 vocab_pkl_path = os.path.join(feat_dir, ds + '_vocab.pkl')
 caption_pkl_path = os.path.join(feat_dir, ds + '_captions.pkl')
@@ -75,6 +77,9 @@ video_h5_dataset = 'feats'
 
 # 结果评估相关的参数
 result_dir = 'results'
+if not os.path.exists(result_dir):
+    os.mkdir(result_dir)
+
 reference_txt_path = os.path.join(result_dir, 'references.txt')
 predict_txt_path = os.path.join(result_dir, 'predictions.txt')
 

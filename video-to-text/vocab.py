@@ -10,7 +10,7 @@ import pickle
 import json
 import nltk
 from collections import Counter
-from args import anno_json_path, feat_dir, vocab_pkl_path
+from args import anno_json_path, vocab_pkl_path
 
 
 class Vocabulary(object):
@@ -81,8 +81,6 @@ def build_vocab(rawdata, threshold):
 def main():
     vocab = build_vocab(rawdata=anno_json_path, threshold=3)
     print('Vocabulary has %d words.' % len(vocab))
-    if not os.path.exists(feat_dir):
-        os.mkdir(feat_dir)
     with open(vocab_pkl_path, 'wb') as f:
         pickle.dump(vocab, f)
     print('Save vocabulary to %s' % vocab_pkl_path)

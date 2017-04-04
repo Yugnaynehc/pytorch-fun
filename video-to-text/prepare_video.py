@@ -12,7 +12,7 @@ from model import EncoderCNN
 import torch
 from torch.autograd import Variable
 import h5py
-from args import video_root, feat_dir, video_h5_path, video_h5_dataset
+from args import video_root, video_h5_path, video_h5_dataset
 from args import video_sort_lambda
 from args import frame_sample_rate, num_frames, frame_size
 
@@ -21,10 +21,6 @@ def main():
     encoder = EncoderCNN()
     encoder.eval()
     encoder.cuda()
-
-    # 设置一下数据读取和保存的目录
-    if not os.path.exists(feat_dir):
-        os.mkdir(feat_dir)
 
     # 读取视频列表，让视频按照id升序排列
     videos = sorted(os.listdir(video_root), key=video_sort_lambda)

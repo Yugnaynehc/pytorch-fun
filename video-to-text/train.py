@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
-from args import vocab_pkl_path, caption_pkl_path, video_h5_path
+from args import vocab_pkl_path, caption_train_pkl_path, video_h5_path
 from args import num_epochs, batch_size, learning_rate
 from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
@@ -25,7 +25,7 @@ with open(vocab_pkl_path, 'rb') as f:
 vocab_size = len(vocab)
 
 # 初始化数据加载器
-train_loader = get_loader(caption_pkl_path, video_h5_path, batch_size)
+train_loader = get_loader(caption_train_pkl_path, video_h5_path, batch_size)
 total_step = len(train_loader)
 
 # 构建模型

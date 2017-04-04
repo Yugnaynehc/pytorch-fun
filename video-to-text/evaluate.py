@@ -18,7 +18,7 @@ from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
 from args import caption_val_pkl_path, val_range
 from args import use_cuda
-from args import result_dir, reference_txt_path, predict_txt_path
+from args import reference_txt_path, predict_txt_path
 
 
 with open(vocab_pkl_path, 'rb') as f:
@@ -36,8 +36,6 @@ decoder.eval()
 test_loader = get_loader(caption_val_pkl_path, video_h5_path, 100, num_workers=1)
 total_step = len(test_loader)
 
-if not os.path.exists(result_dir):
-    os.mkdir(result_dir)
 # reference_txt = codecs.open(reference_txt_path, 'w')
 
 result = {}
