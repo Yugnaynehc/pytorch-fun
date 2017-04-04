@@ -13,3 +13,4 @@ feats
 feats/
 *.npy
 results/
+logs/

@@ -16,9 +16,9 @@ from args import decoder_pth_path
 from args import frame_size, num_frames, num_words
 from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
-from args import caption_val_pkl_path, val_range
+from args import caption_test_pkl_path, test_range
 from args import use_cuda
-from args import reference_txt_path, predict_txt_path
+from args import predict_txt_path
 
 
 with open(vocab_pkl_path, 'rb') as f:
@@ -33,14 +33,12 @@ decoder.eval()
 
 # 载入测试数据集
 # 只能开一个进程! 不然会出现结果不稳定的灵异现象,估计是因为多进程没有同步导致数据读乱了
-test_loader = get_loader(caption_val_pkl_path, video_h5_path, 100, num_workers=1)
+test_loader = get_loader(caption_test_pkl_path, video_h5_path, 100, num_workers=1)
 total_step = len(test_loader)
-
-# reference_txt = codecs.open(reference_txt_path, 'w')
 
 result = {}
 processed_count = 0
-total_count = val_range[1] - val_range[0]
+total_count = test_range[1] - test_range[0]
 
 for i, (videos, captions, lengths, video_ids) in enumerate(test_loader):
     # 过滤一下已经计算过的视频
@@ -71,19 +69,12 @@ for i, (videos, captions, lengths, video_ids) in enumerate(test_loader):
         s = decode_tokens(tokens, vocab)
         result[vid] = s
 
-    # captions = captions.squeeze()
-    # for tokens, vid in zip(captions, video_ids):
-    #     try:
-    #         s = decode_tokens(tokens, vocab)
-    #         reference_txt.write('%d\t%s\n' % (vid + 1, s))  # MSVD数据集的index从1开始
-    #     except Exception as e:
-    #         print(s)
-    #         # reference_txt.write('%d\t%s\n' % (vid, s[:-1]))
     print('Processed %d/%d' % (processed_count, total_count))
 
-# reference_txt.close()
 
 predict_txt = open(predict_txt_path, 'w')
 for vid, s in result.items():
-    predict_txt.write('%d\t%s\n' % (vid + 1, s))  # MSVD数据集的index从1开始
+    # predict_txt.write('%d\t%s\n' % (vid + 1, s))  # MSVD数据集的index从1开始
+    predict_txt.write('%d\t%s\n' % (vid, s))  # MSVD数据集的index从1开始
+
 predict_txt.close()

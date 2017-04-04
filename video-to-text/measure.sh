@@ -1,7 +1,9 @@
 #!/usr/bin/sh
 
 
-python2 evaluate.py
+if [ $# -lt 1 ]; then
+    python2 evaluate.py
+fi
 
 cd caption-eval
 python2 create_json_references.py -i ../results/references.txt -o ../results/references.json

@@ -6,3 +6,4 @@ pytube
 ipdb
 pandas
 builtins  # python2 only
+tensorboard_logger  # for use tensorboard to view training loss

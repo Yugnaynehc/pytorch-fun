@@ -42,6 +42,11 @@ for name, desc in zip(video_data['VideoName'], video_data['Description']):
         print(name, desc)
         continue
     d = {}
+    # 还有很多新的坑! 有的句子带有一大堆\n或者带有\r\n
+    desc = desc.replace('\n', '')
+    desc = desc.replace('\r', '')
+    # 有的句子有句号结尾,有的没有,甚至有的有多句.把句号以及多于一句的内容去掉
+    desc = desc.split('.')[0]
     d['caption'] = desc
     d['video_id'] = video_name2id[name]
     sents_anno.append(d)

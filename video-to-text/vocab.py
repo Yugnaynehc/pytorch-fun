@@ -5,7 +5,6 @@
 
 from __future__ import print_function
 
-import os
 import pickle
 import json
 import nltk
@@ -69,8 +68,6 @@ def build_vocab(rawdata, threshold):
 
     # 略去一些低频词
     words = [w for w, c in counter.items() if c >= threshold]
-    # 剔除掉 '.' 这个符号，用<end>代替
-    words.remove('.')
     # 开始构建词典！
     vocab = Vocabulary()
     for w in words:

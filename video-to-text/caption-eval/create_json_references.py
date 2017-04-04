@@ -64,8 +64,11 @@ class CocoAnnotations:
             for line in opfd:
                 count += 1
                 id_sent = line.strip().split('\t')
-                assert len(id_sent) == 2
-                sent = id_sent[1].decode('ascii', 'ignore')
+                try:
+                    assert len(id_sent) == 2
+                    sent = id_sent[1].decode('ascii', 'ignore')
+                except Exception as e:
+                    print(line)
                 image_dict, image_hash = self.get_image_dict(id_sent[0])
                 self.images.append(image_dict)
 

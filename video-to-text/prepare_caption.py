@@ -1,6 +1,10 @@
 # coding: utf-8
+'''
+做两件事:
+1. 对数据集进行train val test的划分
+2. 把caption转换成token index表示然后存到picke中
+'''
 
-import os
 import json
 import nltk
 import pickle
@@ -40,9 +44,6 @@ def main():
         caption = row['caption'].lower()
         video_id = int(row['video_id'][5:])
         split = split_dict[video_id]
-        if caption[-1] == '.':
-            caption = caption[:-1]
-        # words = caption.split(' ')
         words = nltk.tokenize.word_tokenize(caption)
         l = len(words) + 1  # 加上一个<end>
         lengths[split].append(l)
@@ -52,7 +53,6 @@ def main():
             count += 1
         # 把caption用word id来表示
         tokens = []
-        # tokens.append(vocab('<start>'))
         for word in words:
             tokens.append(vocab(word))
         tokens.append(vocab('<end>'))

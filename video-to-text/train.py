@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from builtins import range
+import os
 import pickle
 from utils import decode_tokens
 from vocab import Vocabulary
@@ -15,8 +16,12 @@ from args import num_epochs, batch_size, learning_rate
 from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
 from args import frame_size, num_frames, num_words
-from args import use_cuda
-from args import decoder_pth_path
+from args import use_cuda, use_checkpoint
+from args import decoder_pth_path, optimizer_pth_path
+from args import log_environment
+from tensorboard_logger import configure, log_value
+
+configure(log_environment, flush_secs=10)
 
 
 # 加载词典
@@ -31,12 +36,17 @@ total_step = len(train_loader)
 # 构建模型
 decoder = DecoderRNN(frame_size, img_embed_size, hidden1_size, word_embed_size,
                      hidden2_size, num_frames, num_words, vocab)
+
+if os.path.exists(decoder_pth_path) and use_checkpoint:
+    decoder.load_state_dict(torch.load(decoder_pth_path))
 if use_cuda:
     decoder.cuda()
 
 # 初始化损失函数和优化器
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(decoder.parameters(), lr=learning_rate)
+if os.path.exists(optimizer_pth_path) and use_checkpoint:
+    optimizer.load_state_dict(torch.load(optimizer_pth_path))
 
 # 打印训练环境的参数设置情况
 print('Learning rate: %.4f' % learning_rate)
@@ -65,6 +75,7 @@ for epoch in range(num_epochs):
         targets = torch.cat([targets[j][:lengths[j]] for j in range(bsz)], 0)
         targets = targets.view(-1)
         loss = criterion(outputs, targets)
+        log_value('loss', loss.data[0], i)
         loss_count += loss.data[0]
         loss.backward()
         optimizer.step()
@@ -80,5 +91,7 @@ for epoch in range(num_epochs):
             gt = decode_tokens(captions[0].squeeze(), vocab)
             print('WE: %s\nGT: %s' % (we, gt))
     torch.save(decoder.state_dict(), decoder_pth_path)
+    torch.save(optimizer.state_dict(), optimizer_pth_path)
 
 torch.save(decoder.state_dict(), decoder_pth_path)
+torch.save(optimizer.state_dict(), optimizer_pth_path)

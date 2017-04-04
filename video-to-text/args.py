@@ -10,9 +10,11 @@ num_epochs = 100
 batch_size = 200
 learning_rate = 3e-4
 use_cuda = True
+use_checkpoint = True
+log_environment = 'logs/video-to-text'  # tensorboard的记录环境
 
 # 模型相关的超参数
-img_embed_size = 1000
+img_embed_size = 500
 word_embed_size = 500
 hidden1_size = 1000  # 第一个LSTM层的隐层单元数目
 hidden2_size = 1000  # 第二个KSTM层的隐层单元数目
@@ -35,7 +37,7 @@ msrvtt_val_range = None
 msrvtt_test_range = None
 
 msvd_video_root = './MSVD/youtube_videos'
-msvd_csv_path = './MSVD/MSR Video Description Corpus.csv'
+msvd_csv_path = './MSVD/MSR Video Description Corpus_refine.csv'  # 手动修改一些数据集中的错误
 msvd_video_name2id_map = './MSVD/youtube_mapping.txt'
 msvd_anno_json_path = './MSVD/annotations.json'  # MSVD并未提供这个文件，需要自己写代码生成（build_msvd_annotation.py）
 msvd_split_json_path = './MSVD/split.json'  # 自己生成一个数据集划分的json文件（build_msvd_split.py）
@@ -88,3 +90,4 @@ predict_txt_path = os.path.join(result_dir, 'predictions.txt')
 vgg_checkpoint = './models/vgg16-00b39a1b.pth'  # 从caffe转换而来
 # vgg_checkpoint = './models/vgg16-397923af.pth'  # 直接用pytorch训练的模型
 decoder_pth_path = os.path.join(result_dir, ds + '_decoder.pth')
+optimizer_pth_path = os.path.join(result_dir, ds + '_optimizer.pth')
