@@ -29,10 +29,6 @@ with open(vocab_pkl_path, 'rb') as f:
     vocab = pickle.load(f)
 vocab_size = len(vocab)
 
-# 初始化数据加载器
-train_loader = get_loader(caption_train_pkl_path, video_h5_path, batch_size)
-total_step = len(train_loader)
-
 # 构建模型
 decoder = DecoderRNN(frame_size, img_embed_size, hidden1_size, word_embed_size,
                      hidden2_size, num_frames, num_words, vocab)
@@ -52,10 +48,14 @@ if os.path.exists(optimizer_pth_path) and use_checkpoint:
 print('Learning rate: %.4f' % learning_rate)
 print('Batch size: %d' % batch_size)
 
-# 训练模型
+# 初始化数据加载器
+train_loader = get_loader(caption_train_pkl_path, video_h5_path, batch_size)
+total_step = len(train_loader)
+
+# 开始训练模型
 loss_count = 0
 for epoch in range(num_epochs):
-    for i, (videos, captions, lengths, _) in enumerate(train_loader):
+    for i, (videos, captions, lengths, video_ids) in enumerate(train_loader):
         # 构造mini batch的Variable
         videos = Variable(videos)
         targets = Variable(captions)
@@ -75,12 +75,12 @@ for epoch in range(num_epochs):
         targets = torch.cat([targets[j][:lengths[j]] for j in range(bsz)], 0)
         targets = targets.view(-1)
         loss = criterion(outputs, targets)
-        log_value('loss', loss.data[0], i)
+        log_value('loss', loss.data[0], epoch * total_step + i)
         loss_count += loss.data[0]
         loss.backward()
         optimizer.step()
 
-        if i % 10 == 0:
+        if i % 9 == 0 and i > 0:
             loss_count /= 10
             print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Perplexity: %5.4f' %
                   (epoch, num_epochs, i, total_step, loss_count,
@@ -89,6 +89,7 @@ for epoch in range(num_epochs):
             tokens = decoder.sample(videos).data[0].squeeze()
             we = decode_tokens(tokens, vocab)
             gt = decode_tokens(captions[0].squeeze(), vocab)
+            print('[vid:%d]' % video_ids[0])
             print('WE: %s\nGT: %s' % (we, gt))
     torch.save(decoder.state_dict(), decoder_pth_path)
     torch.save(optimizer.state_dict(), optimizer_pth_path)

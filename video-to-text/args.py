@@ -4,14 +4,17 @@
 这里存放一些参数
 '''
 import os
+import time
 
 # 训练相关的超参数
 num_epochs = 100
 batch_size = 200
 learning_rate = 3e-4
 use_cuda = True
-use_checkpoint = True
-log_environment = 'logs/video-to-text'  # tensorboard的记录环境
+use_checkpoint = False
+time_format = '%Y-%m-%d_%X'
+current_time = time.strftime(time_format, time.localtime())
+log_environment = os.path.join('logs', 'v2t_' + current_time)  # tensorboard的记录环境
 
 # 模型相关的超参数
 img_embed_size = 500

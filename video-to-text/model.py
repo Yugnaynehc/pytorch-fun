@@ -96,7 +96,7 @@ class DecoderRNN(nn.Module):
         lstm2_state = tuple(Variable(v, volatile=volatile) for v in lstm2_state)
         return lstm1_state, lstm2_state
 
-    def forward(self, video_feats, captions, teacher_forcing_ratio=0.5):
+    def forward(self, video_feats, captions, teacher_forcing_ratio=0.0):
         '''
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
@@ -181,72 +181,72 @@ class DecoderRNN(nn.Module):
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs
 
-    # def forward(self, video_feats, captions, teacher_forcing_ratio=0.5):
-    #     '''
-    #     传入视频帧特征和caption，返回生成的caption
-    #     不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
-    #     而是用上一步的生成结果作为下一步的输入
-    #     UPDATED: 最后还是采用了混合的teacher forcing模式，不然很难收敛
-    #     '''
-    #     batch_size = len(video_feats)
-    #     # 用来获取数据类型，统一cuda和cpu类型的数据初始化代码
-    #     d = video_feats.data
-    #     # 根据是否传入caption判断是否是推断模式
-    #     infer = True if captions is None else False
+    def forward_old(self, video_feats, captions, teacher_forcing_ratio=0.5):
+        '''
+        传入视频帧特征和caption，返回生成的caption
+        不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
+        而是用上一步的生成结果作为下一步的输入
+        UPDATED: 最后还是采用了混合的teacher forcing模式，不然很难收敛
+        '''
+        batch_size = len(video_feats)
+        # 用来获取数据类型，统一cuda和cpu类型的数据初始化代码
+        d = video_feats.data
+        # 根据是否传入caption判断是否是推断模式
+        infer = True if captions is None else False
 
-    #     v = video_feats.view(-1, self.frame_size)
-    #     v = self.frame_embed(v)
-    #     v = self.frame_drop(v)
-    #     v = v.view(batch_size, self.num_frames, self.frame_embed_size)
-    #     v = torch.mean(v, 1).squeeze(1)
+        v = video_feats.view(-1, self.frame_size)
+        v = self.frame_embed(v)
+        v = self.frame_drop(v)
+        v = v.view(batch_size, self.num_frames, self.frame_embed_size)
+        v = torch.mean(v, 1).squeeze(1)
 
-    #     # 初始化LSTM隐层
-    #     lstm1_state, lstm2_state = self._init_lstm_state(d, infer)
-    #     lstm2_hidden, lstm2_cell = lstm2_state
-    #     lstm2_state = (v, lstm2_cell)
+        # 初始化LSTM隐层
+        lstm1_state, lstm2_state = self._init_lstm_state(d, infer)
+        lstm2_hidden, lstm2_cell = lstm2_state
+        lstm2_state = (v, lstm2_cell)
 
-    #     # Decoding 阶段！
-    #     frame_pad = d.new(batch_size, self.frame_embed_size).zero_()
-    #     frame_pad = Variable(frame_pad, requires_grad=False)
-    #     # 开始准备输出啦！
-    #     outputs = []
-    #     # 先送一个<start>标记
-    #     word_id = self.vocab('<start>')
-    #     word = Variable(d.new(batch_size, 1).long().fill_(word_id))
-    #     word = self.word_embed(word).squeeze(1)
-    #     word = self.word_drop(word)
+        # Decoding 阶段！
+        frame_pad = d.new(batch_size, self.frame_embed_size).zero_()
+        frame_pad = Variable(frame_pad, requires_grad=False)
+        # 开始准备输出啦！
+        outputs = []
+        # 先送一个<start>标记
+        word_id = self.vocab('<start>')
+        word = Variable(d.new(batch_size, 1).long().fill_(word_id))
+        word = self.word_embed(word).squeeze(1)
+        word = self.word_drop(word)
 
-    #     for i in range(self.num_words):
-    #         if not infer and captions[:, i].data.sum() == 0:
-    #             # <pad>的id是0，如果所有的word id都是0，
-    #             # 意味着所有的句子都结束了，没有必要再算了
-    #             break
-    #         lstm2_hidden, lstm2_cell = self.lstm2_cell(word, lstm2_state)
-    #         # lstm2_hidden = self.lstm2_drop(lstm2_hidden)
-    #         lstm2_state = (lstm2_hidden, lstm2_cell)
+        for i in range(self.num_words):
+            if not infer and captions[:, i].data.sum() == 0:
+                # <pad>的id是0，如果所有的word id都是0，
+                # 意味着所有的句子都结束了，没有必要再算了
+                break
+            lstm2_hidden, lstm2_cell = self.lstm2_cell(word, lstm2_state)
+            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
+            lstm2_state = (lstm2_hidden, lstm2_cell)
 
-    #         word_logits = self.linear(lstm2_hidden)
-    #         use_teacher_forcing = random.random() < teacher_forcing_ratio
-    #         if use_teacher_forcing:
-    #             # teacher forcing模式
-    #             word_id = captions[:, i]
-    #         else:
-    #             # 非 teacher forcing模式
-    #             word_id = word_logits.max(1)[1]
-    #         # 确定下一个输入单词的表示
-    #         word = self.word_embed(word_id).squeeze(1)
-    #         word = self.word_drop(word)
-    #         if infer:
-    #             # 如果是推断模式，直接返回单词id
-    #             outputs.append(word_id)
-    #         else:
-    #             # 否则是训练模式，要返回logits
-    #             outputs.append(word_logits)
-    #     # unsqueeze(1)会把一个向量(n)拉成列向量(nx1)
-    #     # outputs中的每一个向量都是整个batch在某个时间步的输出
-    #     # 把它拉成列向量之后再横着拼起来，就能得到整个batch在所有时间步的输出
-    #     outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
-    #     return outputs
+            word_logits = self.linear(lstm2_hidden)
+            use_teacher_forcing = random.random() < teacher_forcing_ratio
+            if not infer and use_teacher_forcing:
+                # teacher forcing模式
+                word_id = captions[:, i]
+            else:
+                # 非 teacher forcing模式
+                word_id = word_logits.max(1)[1]
+            # 确定下一个输入单词的表示
+            word = self.word_embed(word_id).squeeze(1)
+            word = self.word_drop(word)
+            if infer:
+                # 如果是推断模式，直接返回单词id
+                outputs.append(word_id)
+            else:
+                # 否则是训练模式，要返回logits
+                outputs.append(word_logits)
+        # unsqueeze(1)会把一个向量(n)拉成列向量(nx1)
+        # outputs中的每一个向量都是整个batch在某个时间步的输出
+        # 把它拉成列向量之后再横着拼起来，就能得到整个batch在所有时间步的输出
+        outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
+        return outputs
 
     def sample(self, video_feats):
         '''

@@ -8,6 +8,7 @@ train:1-1200, val:1201-1300, test:1301-1970
 import json
 from args import split_json_path
 from args import train_range, val_range, test_range
+import pprint
 
 
 split_dict = {}
@@ -22,3 +23,5 @@ for i in range(*test_range):
 split = {'split': split_dict}
 with open(split_json_path, 'w') as f:
     json.dump(split, f)
+
+pprint.pprint(split_dict)

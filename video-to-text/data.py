@@ -45,7 +45,7 @@ def collate_fn(data):
     '''
     videos, captions, lengths, video_ids = zip(*data)
 
-    # 把视频合并在一起（把4D Tensor的序列变成5D Tensor）
+    # 把视频合并在一起（把2D Tensor的序列变成3D Tensor）
     videos = torch.stack(videos, 0)
 
     # 把caption合并在一起（把1D Tensor的序列变成一个2D Tensor）

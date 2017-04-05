@@ -33,9 +33,13 @@ with open(msvd_video_name2id_map, 'r') as f:
 
 # 开始准备按照MSR-VTT的结构构造json文件
 sents_anno = []
+not_use_video = []
 for name, desc in zip(video_data['VideoName'], video_data['Description']):
     if name not in video_name2id:
-        print(name)
+        if name not in not_use_video:
+            print(name)
+            not_use_video.append(name)
+        not_use_video.append(name)
         continue
     # 有个坑，SKhmFSV-XB0这个视频里面有一个caption的内容是NaN
     if type(desc) == float:
@@ -47,6 +51,8 @@ for name, desc in zip(video_data['VideoName'], video_data['Description']):
     desc = desc.replace('\r', '')
     # 有的句子有句号结尾,有的没有,甚至有的有多句.把句号以及多于一句的内容去掉
     desc = desc.split('.')[0]
+    # 放大招了! 过滤掉所有非ascii字符!
+    desc = desc.decode('ascii', 'ignore')
     d['caption'] = desc
     d['video_id'] = video_name2id[name]
     sents_anno.append(d)

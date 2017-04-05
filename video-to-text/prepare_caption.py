@@ -43,7 +43,13 @@ def main():
     for row in anno_data:
         caption = row['caption'].lower()
         video_id = int(row['video_id'][5:])
-        split = split_dict[video_id]
+        if video_id in split_dict:
+            split = split_dict[video_id]
+        else:
+            # 如果video_id不在split_dict中
+            # 那么就默认它是test
+            # 这样方便我修改split来做一些过拟合训练
+            split = 'test'
         words = nltk.tokenize.word_tokenize(caption)
         l = len(words) + 1  # 加上一个<end>
         lengths[split].append(l)
