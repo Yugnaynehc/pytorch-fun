@@ -4,7 +4,7 @@
 准备ground-truth,用来评估结果的好坏
 '''
 import json
-from args import test_range as selected_range
+from args import train_range as selected_range
 from args import anno_json_path, reference_txt_path
 
 

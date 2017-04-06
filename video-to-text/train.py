@@ -49,7 +49,7 @@ print('Learning rate: %.4f' % learning_rate)
 print('Batch size: %d' % batch_size)
 
 # 初始化数据加载器
-train_loader = get_loader(caption_train_pkl_path, video_h5_path, batch_size)
+train_loader = get_loader(caption_train_pkl_path, video_h5_path, batch_size, num_workers=1)
 total_step = len(train_loader)
 
 # 开始训练模型

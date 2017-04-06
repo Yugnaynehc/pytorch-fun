@@ -58,17 +58,17 @@ class DecoderRNN(nn.Module):
 
         # frame_embed用来把视觉特征嵌入到低维空间
         self.frame_embed = nn.Linear(frame_size, frame_embed_size)
-        self.frame_drop = nn.Dropout(p=0.5)
+        # self.frame_drop = nn.Dropout(p=0.5)
         # word_embed用来把文本特征嵌入到低维空间
         self.word_embed = nn.Embedding(self.vocab_size, word_embed_size)
-        self.word_drop = nn.Dropout(p=0.5)
+        # self.word_drop = nn.Dropout(p=0.5)
         # lstm1_cell用来处理视觉特征
         self.lstm1_cell = nn.LSTMCell(frame_embed_size, hidden1_size)
-        self.lstm1_drop = nn.Dropout(p=0.5)
+        # self.lstm1_drop = nn.Dropout(p=0.5)
         # lstm2_cell用来处理视觉和文本的融合特征
         self.lstm2_cell = nn.LSTMCell(word_embed_size + hidden1_size, hidden2_size)
         # self.lstm2_cell = nn.LSTMCell(word_embed_size, hidden2_size)
-        self.lstm2_drop = nn.Dropout(p=0.5)
+        # self.lstm2_drop = nn.Dropout(p=0.5)
         # linear用来把lstm的最终输出映射回文本空间
         self.linear = nn.Linear(hidden2_size, self.vocab_size)
 
@@ -78,7 +78,7 @@ class DecoderRNN(nn.Module):
         variance = math.sqrt(2.0 / (self.frame_size + self.frame_embed_size))
         self.frame_embed.weight.data.normal_(0.0, variance)
         self.frame_embed.bias.data.zero_()
-        self.word_embed.weight.data.uniform_(-0.08, 0.08)
+        self.word_embed.weight.data.uniform_(-1.73, 1.73)
         self.linear.weight.data.uniform_(-0.08, 0.08)
         self.linear.bias.data.zero_()
 
@@ -96,7 +96,7 @@ class DecoderRNN(nn.Module):
         lstm2_state = tuple(Variable(v, volatile=volatile) for v in lstm2_state)
         return lstm1_state, lstm2_state
 
-    def forward(self, video_feats, captions, teacher_forcing_ratio=0.0):
+    def forward(self, video_feats, captions, teacher_forcing_ratio=0.5):
         '''
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
@@ -111,7 +111,7 @@ class DecoderRNN(nn.Module):
 
         v = video_feats.view(-1, self.frame_size)
         v = self.frame_embed(v)
-        v = self.frame_drop(v)
+        # v = self.frame_drop(v)
         v = v.view(batch_size, self.num_frames, self.frame_embed_size)
 
         # 初始化LSTM隐层
@@ -142,7 +142,7 @@ class DecoderRNN(nn.Module):
         word_id = self.vocab('<start>')
         word = Variable(d.new(batch_size, 1).long().fill_(word_id))
         word = self.word_embed(word).squeeze(1)
-        word = self.word_drop(word)
+        # word = self.word_drop(word)
 
         for i in range(self.num_words):
             if not infer and captions[:, i].data.sum() == 0:
@@ -168,7 +168,7 @@ class DecoderRNN(nn.Module):
                 word_id = word_logits.max(1)[1]
             # 确定下一个输入单词的表示
             word = self.word_embed(word_id).squeeze(1)
-            word = self.word_drop(word)
+            # word = self.word_drop(word)
             if infer:
                 # 如果是推断模式，直接返回单词id
                 outputs.append(word_id)
@@ -181,7 +181,7 @@ class DecoderRNN(nn.Module):
         outputs = torch.cat([o.unsqueeze(1) for o in outputs], 1).contiguous()
         return outputs
 
-    def forward_old(self, video_feats, captions, teacher_forcing_ratio=0.5):
+    def forward_bak(self, video_feats, captions, teacher_forcing_ratio=0.0):
         '''
         传入视频帧特征和caption，返回生成的caption
         不用teacher forcing模式（LSTM的输入来自caption的ground-truth）来训练
@@ -196,7 +196,7 @@ class DecoderRNN(nn.Module):
 
         v = video_feats.view(-1, self.frame_size)
         v = self.frame_embed(v)
-        v = self.frame_drop(v)
+        # v = self.frame_drop(v)
         v = v.view(batch_size, self.num_frames, self.frame_embed_size)
         v = torch.mean(v, 1).squeeze(1)
 
@@ -214,7 +214,7 @@ class DecoderRNN(nn.Module):
         word_id = self.vocab('<start>')
         word = Variable(d.new(batch_size, 1).long().fill_(word_id))
         word = self.word_embed(word).squeeze(1)
-        word = self.word_drop(word)
+        # word = self.word_drop(word)
 
         for i in range(self.num_words):
             if not infer and captions[:, i].data.sum() == 0:
@@ -222,7 +222,7 @@ class DecoderRNN(nn.Module):
                 # 意味着所有的句子都结束了，没有必要再算了
                 break
             lstm2_hidden, lstm2_cell = self.lstm2_cell(word, lstm2_state)
-            lstm2_hidden = self.lstm2_drop(lstm2_hidden)
+            # lstm2_hidden = self.lstm2_drop(lstm2_hidden)
             lstm2_state = (lstm2_hidden, lstm2_cell)
 
             word_logits = self.linear(lstm2_hidden)
@@ -235,7 +235,7 @@ class DecoderRNN(nn.Module):
                 word_id = word_logits.max(1)[1]
             # 确定下一个输入单词的表示
             word = self.word_embed(word_id).squeeze(1)
-            word = self.word_drop(word)
+            # word = self.word_drop(word)
             if infer:
                 # 如果是推断模式，直接返回单词id
                 outputs.append(word_id)

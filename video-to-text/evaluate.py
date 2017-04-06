@@ -15,8 +15,8 @@ from args import decoder_pth_path
 from args import frame_size, num_frames, num_words
 from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
-from args import caption_test_pkl_path as caption_pkl_path
-from args import test_range as selected_range
+from args import caption_train_pkl_path as caption_pkl_path
+from args import train_range as selected_range
 from args import use_cuda
 from args import predict_txt_path
 

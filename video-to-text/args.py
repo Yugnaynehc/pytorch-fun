@@ -7,8 +7,8 @@ import os
 import time
 
 # 训练相关的超参数
-num_epochs = 100
-batch_size = 200
+num_epochs = 200
+batch_size = 100
 learning_rate = 3e-4
 use_cuda = True
 use_checkpoint = False
