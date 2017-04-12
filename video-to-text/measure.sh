@@ -2,6 +2,7 @@
 
 
 if [ $# -lt 1 ]; then
+    python2 prepare_gt.py
     python2 evaluate.py
 fi
 

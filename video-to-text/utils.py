@@ -6,14 +6,19 @@ import skimage
 from graphviz import Digraph
 
 
-def resize_frame(image, target_height=224, target_width=224):
+def preprocess_frame(image, target_height=224, target_width=224):
     if len(image.shape) == 2:
         # 把单通道的灰度图复制三遍变成三通道的图片
         image = np.tile(image[:, :, None], 3)
     elif len(image.shape) == 4:
         image = image[:, :, :, 0]
-    image = skimage.img_as_float(image).astype(np.float32)
+    image = skimage.img_as_ubyte(image).astype(np.float32)
+    # 减去在ILSVRC数据集上的图像的均值（BGR格式）
     image -= np.array([103.939, 116.779, 123.68])
+    # image -= np.array([104.00698793, 116.66876762, 122.67891434])
+    # 把BGR的图片转换成RGB的图片，因为之后的模型（caffe预训练版）用的是RGB格式
+    image = image[:, :, ::-1]
+
     height, width, channels = image.shape
     if height == width:
         resized_image = cv2.resize(image, (target_height, target_width))

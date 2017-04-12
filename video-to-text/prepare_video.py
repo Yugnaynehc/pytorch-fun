@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import os
 import cv2
 import numpy as np
-from utils import resize_frame
+from utils import preprocess_frame
 from model import EncoderCNN
 import torch
 from torch.autograd import Variable
@@ -72,7 +72,7 @@ def main():
             frame_count = num_frames
 
         # 把图像做一下处理，然后转换成（batch, channel, height, width）的格式
-        cropped_frame_list = np.array([resize_frame(x)
+        cropped_frame_list = np.array([preprocess_frame(x)
                                        for x in frame_list]).transpose((0, 3, 1, 2))
         cropped_frame_list = Variable(torch.from_numpy(cropped_frame_list),
                                       volatile=True).cuda()

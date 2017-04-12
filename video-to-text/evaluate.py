@@ -15,8 +15,7 @@ from args import decoder_pth_path
 from args import frame_size, num_frames, num_words
 from args import img_embed_size, word_embed_size
 from args import hidden1_size, hidden2_size
-from args import caption_train_pkl_path as caption_pkl_path
-from args import train_range as selected_range
+from args import eval_caption_pkl_path, eval_range
 from args import use_cuda
 from args import predict_txt_path
 
@@ -33,12 +32,13 @@ decoder.eval()
 
 # 载入测试数据集
 # 只能开一个进程! 不然会出现结果不稳定的灵异现象,估计是因为多进程没有同步导致数据读乱了
-test_loader = get_loader(caption_pkl_path, video_h5_path, 100, False, num_workers=1)
+test_loader = get_loader(eval_caption_pkl_path, video_h5_path, 100,
+                         False, num_workers=1)
 total_step = len(test_loader)
 
 result = {}
 processed_count = 0
-total_count = selected_range[1] - selected_range[0]
+total_count = eval_range[1] - eval_range[0]
 
 for i, (videos, captions, lengths, video_ids) in enumerate(test_loader):
     # 过滤一下已经计算过的视频
@@ -69,7 +69,7 @@ for i, (videos, captions, lengths, video_ids) in enumerate(test_loader):
         s = decode_tokens(tokens, vocab)
         result[vid] = s
 
-    print('Processed %d/%d' % (processed_count, total_count))
+    # print('Processed %d/%d' % (processed_count, total_count))
 
 
 predict_txt = open(predict_txt_path, 'w')

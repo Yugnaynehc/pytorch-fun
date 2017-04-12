@@ -79,6 +79,8 @@ caption_test_pkl_path = caption_pkl_base + '_test.pkl'
 video_h5_path = os.path.join(feat_dir, ds + '_videos.h5')
 video_h5_dataset = 'feats'
 
+eval_caption_pkl_path = caption_test_pkl_path
+eval_range = test_range
 
 # 结果评估相关的参数
 result_dir = 'results'

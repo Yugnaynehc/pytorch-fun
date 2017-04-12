@@ -58,6 +58,8 @@ def build_vocab(rawdata, threshold):
     ncaptions = len(sentences)
     for i, row in enumerate(sentences):
         caption = row['caption']
+        # 去掉逗号
+        caption = caption.replace(',', '')
         # 直接按照空格进行单词的切分
         # tokens = caption.lower().split(' ')
         # 使用nltk来进行单词切分

@@ -50,6 +50,7 @@ for name, desc in zip(video_data['VideoName'], video_data['Description']):
     desc = desc.replace('\n', '')
     desc = desc.replace('\r', '')
     # 有的句子有句号结尾,有的没有,甚至有的有多句.把句号以及多于一句的内容去掉
+    # MSR-VTT数据集是没有句号结尾的
     desc = desc.split('.')[0]
     # 放大招了! 过滤掉所有非ascii字符!
     desc = desc.decode('ascii', 'ignore')
